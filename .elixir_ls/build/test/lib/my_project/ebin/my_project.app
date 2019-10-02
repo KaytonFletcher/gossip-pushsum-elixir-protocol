@@ -1,6 +1,6 @@
-{application,gossip,
+{application,my_project,
              [{applications,[kernel,stdlib,elixir,logger]},
-              {description,"gossip"},
+              {description,"my_project"},
               {modules,['Elixir.Gossip.Application','Elixir.Gossip.Collector',
                         'Elixir.Gossip.Topology','Elixir.Gossip.Worker']},
               {registered,[]},

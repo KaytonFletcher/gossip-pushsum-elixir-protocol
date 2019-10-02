@@ -3,29 +3,33 @@ defmodule Gossip.Collector do
   @me Gossip.Collecter
 
   def start_link(state) do
-    GenServer.start_link(__MODULE__, state, [name: @me])
+    GenServer.start_link(__MODULE__, state, name: @me)
   end
 
   @impl GenServer
-  def init(num_nodes) do
-    {:ok, {num_nodes, 0}}
+  def init({num_nodes, start_time}) do
+    {:ok, {num_nodes, start_time, 0, 0}}
   end
 
   # client
-  def finished() do
-    GenServer.cast(@me, :finished)
+  def finished(is_success) do
+    GenServer.cast(@me, {:finished, is_success})
   end
 
   # server
   @impl GenServer
-  def handle_cast(:finished, {num_nodes, nodes_finished}) do
+  def handle_cast({:finished, is_success}, {num_nodes, start_time, nodes_finished, num_success}) do
     if(num_nodes == nodes_finished + 1) do
-      IO.puts("APP FINISHED")
+      IO.inspect(num_success/nodes_finished * 100, label: "percentage that met end condition")
+      IO.inspect(System.monotonic_time(:millisecond) - start_time, label: "Convergence Time")
       System.halt(0)
-      #{:stop, :normal, nil}
     else
-      IO.inspect(nodes_finished+1, label: "finished")
-      {:noreply, {num_nodes, nodes_finished+1}}
+      if(is_success) do
+        {:noreply, {num_nodes, start_time, nodes_finished + 1, num_success + 1}}
+      else
+        {:noreply, {num_nodes, start_time, nodes_finished + 1, num_success}}
+      end
+
     end
   end
 end

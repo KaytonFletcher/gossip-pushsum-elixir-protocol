@@ -14,7 +14,6 @@ defmodule Gossip.Worker do
   # init function for push sum algorithm
   @impl GenServer
   def init(%{index: index, algorithm: :push_sum}) do
-    IO.puts(index)
     {:ok, %{data: %{sum: index, weight: 1, repeated: 0, ratio: index}, neighbors: []}}
   end
 
@@ -35,7 +34,7 @@ defmodule Gossip.Worker do
 
   def handle_info(:next_round, %{data: %{times_heard: times_heard}, neighbors: neighbors}) do
     send(Enum.random(neighbors), :gossip)
-    Process.send_after(self(), :next_round, 500)
+    Process.send_after(self(), :next_round, 0)
 
     {:noreply, %{data: %{times_heard: times_heard}, neighbors: neighbors}}
   end
@@ -44,7 +43,7 @@ defmodule Gossip.Worker do
   @impl GenServer
   def handle_info(:gossip, %{data: %{times_heard: times_heard}, neighbors: neighbors}) do
     if(times_heard == 0) do
-      Process.send_after(self(), :next_round, 500)
+      Process.send_after(self(), :next_round, 0)
     end
 
     if(times_heard + 1 == 10) do

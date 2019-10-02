@@ -95,7 +95,7 @@ defmodule Gossip.Application do
         Gossip.Topology.get_neighbors(nodes, topology)
     end
 
-    {:ok, pid} = Gossip.Collector.start_link(num_nodes)
+    {:ok, pid} = Gossip.Collector.start_link({num_nodes, System.monotonic_time(:millisecond)})
 
     # Sends a random node a message, starting the algorithm of choice
     case algorithm do
