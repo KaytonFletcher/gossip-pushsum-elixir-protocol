@@ -25,13 +25,11 @@ defmodule Gossip.Worker do
   @impl GenServer
   def handle_call({:add_neighbors, nodes}, _from, %{data: data, neighbors: neighbors}) do
     new_state = %{data: data, neighbors: nodes ++ neighbors}
-    IO.inspect(new_state, label: "New state")
     {:reply, :ok, new_state}
   end
 
   def handle_info(_anything, %{data: _data, neighbors: []}) do
-    IO.inspect(self(), label: "terminated special case")
-    Gossip.Collector.finished()
+    Gossip.Collector.finished(false)
     {:stop, :normal, nil}
   end
 
@@ -51,7 +49,7 @@ defmodule Gossip.Worker do
 
     if(times_heard + 1 == 10) do
       remove_self_from_neighbors(neighbors)
-      Gossip.Collector.finished()
+      Gossip.Collector.finished(true)
       {:stop, :normal, nil}
     else
       # Increments the number of times this node has heard the message
@@ -59,30 +57,26 @@ defmodule Gossip.Worker do
     end
   end
 
-
-
   @impl GenServer
   def handle_info({:push_sum, %{s: sent_s, w: sent_w}}, %{
         data: %{sum: s, weight: w, repeated: t, ratio: r},
         neighbors: neighbors
       }) do
-      new_s =(s + sent_s) / 2
-      new_w = (w + sent_w) / 2
-      new_r = new_s / new_w
+    new_s = (s + sent_s) / 2
+    new_w = (w + sent_w) / 2
+    new_r = new_s / new_w
 
-    if(abs(new_r-r) < :math.pow(10, -10)) do
+    if(abs(new_r - r) < :math.pow(10, -10)) do
       if(t + 1 == 3) do
-        IO.inspect(self(), label: "terminated")
-        IO.inspect(s / w, label: "final sum")
         remove_self_from_neighbors(neighbors)
         Enum.each(neighbors, fn pid ->
           Process.send(pid, {:push_sum, %{s: 0, w: 0}}, [])
         end)
-        Gossip.Collector.finished()
+        Gossip.Collector.finished(true)
         {:stop, :normal, nil}
       else
-
         Process.send(Enum.random(neighbors), {:push_sum, %{s: new_s, w: new_w}}, [])
+
         {:noreply,
          %{
            data: %{sum: new_s, weight: new_w, repeated: t + 1, ratio: new_r},

@@ -57,13 +57,26 @@ defmodule Gossip.Application do
             raise(ArgumentError, "algorithm provided is not an option: #{bad_algorithm}")
         end
 
+      num_nodes =
+        case topology do
+          :torus3D ->
+            ceil(:math.pow(num_nodes, 1 / 3))
+
+          comb when comb in [:honeycomb, :randhoneycomb] ->
+            t = ceil(:math.pow(num_nodes / 6, 1 / 2))
+            trunc(:math.pow(t, 2) * 6)
+
+          _topology ->
+            num_nodes
+        end
+
+      IO.inspect(num_nodes)
+
       %{num_nodes: num_nodes, topology: topology, algorithm: algorithm}
     end
   end
 
   def main(args \\ []) do
-    # :observer.start()
-
     parsed_args =
       %{num_nodes: num_nodes, topology: topology, algorithm: algorithm} =
       case parse_args(args) do
@@ -73,13 +86,16 @@ defmodule Gossip.Application do
       end
 
     nodes = spawn_workers(parsed_args)
-    IO.inspect(nodes, label: "nodes")
-      
-    case 
-    Gossip.Topology.get_neighbors(nodes, topology)
+
+    case topology do
+      top when top in [:torus3D, :honeycomb, :randhoneycomb] ->
+        Gossip.Topology.get_neighbors(nodes, num_nodes, topology)
+
+      _all ->
+        Gossip.Topology.get_neighbors(nodes, topology)
+    end
 
     {:ok, pid} = Gossip.Collector.start_link(num_nodes)
-
 
     # Sends a random node a message, starting the algorithm of choice
     case algorithm do
@@ -87,12 +103,11 @@ defmodule Gossip.Application do
       :gossip -> send(Enum.random(nodes), :gossip)
     end
 
-
     Process.monitor(pid)
+
     receive do
       {:DOWN, _ref, :process, _object, _reason} ->
         nil
     end
   end
 end
-
