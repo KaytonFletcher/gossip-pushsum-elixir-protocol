@@ -32,7 +32,7 @@ defmodule Gossip.Application do
           "rand2D" ->
             :rand2D
 
-          "3dtorus" ->
+          "3Dtorus" ->
             :torus3D
 
           "honeycomb" ->
@@ -60,8 +60,7 @@ defmodule Gossip.Application do
       num_nodes =
         case topology do
           :torus3D ->
-            ceil(:math.pow(num_nodes, 1 / 3))
-
+            :math.pow(ceil(:math.pow(num_nodes, 1 / 3)), 3)
           comb when comb in [:honeycomb, :randhoneycomb] ->
             t = ceil(:math.pow(num_nodes / 6, 1 / 2))
             trunc(:math.pow(t, 2) * 6)
@@ -69,8 +68,6 @@ defmodule Gossip.Application do
           _topology ->
             num_nodes
         end
-
-      IO.inspect(num_nodes)
 
       %{num_nodes: num_nodes, topology: topology, algorithm: algorithm}
     end

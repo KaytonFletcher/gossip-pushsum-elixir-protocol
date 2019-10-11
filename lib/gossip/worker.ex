@@ -68,9 +68,11 @@ defmodule Gossip.Worker do
     if(abs(new_r - r) < :math.pow(10, -10)) do
       if(t + 1 == 3) do
         remove_self_from_neighbors(neighbors)
+
         Enum.each(neighbors, fn pid ->
           Process.send(pid, {:push_sum, %{s: 0, w: 0}}, [])
         end)
+
         Gossip.Collector.finished(true)
         {:stop, :normal, nil}
       else
@@ -84,6 +86,7 @@ defmodule Gossip.Worker do
       end
     else
       Process.send(Enum.random(neighbors), {:push_sum, %{s: new_s, w: new_w}}, [])
+
       {:noreply,
        %{
          data: %{sum: new_s, weight: new_w, repeated: 0, ratio: new_r},

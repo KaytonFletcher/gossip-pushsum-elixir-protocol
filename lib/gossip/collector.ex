@@ -20,8 +20,8 @@ defmodule Gossip.Collector do
   @impl GenServer
   def handle_cast({:finished, is_success}, {num_nodes, start_time, nodes_finished, num_success}) do
     if(num_nodes == nodes_finished + 1) do
-      IO.inspect(num_success/nodes_finished * 100, label: "percentage that met end condition")
       IO.inspect(System.monotonic_time(:millisecond) - start_time, label: "Convergence Time")
+      IO.inspect(num_success / nodes_finished * 100, label: "Completion Rate")
       System.halt(0)
     else
       if(is_success) do
@@ -29,7 +29,6 @@ defmodule Gossip.Collector do
       else
         {:noreply, {num_nodes, start_time, nodes_finished + 1, num_success}}
       end
-
     end
   end
 end
